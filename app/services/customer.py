@@ -1,0 +1,77 @@
+from app.database import SessionDep
+from sqlmodel import select
+from app.models.customer import *
+from fastapi import Depends, HTTPException, status
+from typing import Annotated
+
+
+class CustomerService():
+
+    def __init__(self, session: SessionDep):
+        self.session = session
+
+    def create_customer(self, customer: BaseCustomer):
+
+        db_customer = self.session.exec(select(Customer).where(
+            Customer.document == customer.document)).first()
+
+        if db_customer:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="customer already exist"
+            )
+
+        db_customer = Customer.model_validate(customer)
+
+        self.session.add(db_customer)
+        self.session.commit()
+        self.session.refresh(db_customer)
+        return db_customer
+
+    def get_customer(self, document: int) -> Customer | None:
+        db_customer = self.session.exec(select(Customer).where(
+            Customer.document == document)).first()
+
+        return db_customer
+
+    def update_customer(self, document: int, customer: UpdateCustomer):
+        db_customer = self.session.exec(select(Customer).where(
+            Customer.document == document)).first()
+
+        if not db_customer:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="customer not found"
+            )
+
+        customer_data = customer.model_dump(exclude_unset=True)
+
+        db_customer.sqlmodel_update(customer_data)
+        self.session.commit()
+        self.session.refresh(db_customer)
+        return db_customer
+
+    def delete_customer(self, document: int):
+        db_customer = self.session.exec(select(Customer).where(
+            Customer.document == document)).first()
+
+        if not db_customer:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="customer not found"
+            )
+
+        self.session.delete(db_customer)
+        self.session.commit()
+
+
+def get_customer_service(
+    session: SessionDep
+):
+    return CustomerService(session=session)
+
+
+CustomerServiceDep = Annotated[
+    CustomerService,
+    Depends(get_customer_service)
+]
