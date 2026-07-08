@@ -114,6 +114,12 @@ def init_data(session: Session):
         lastname="Final"
     )
 
+    juan_cus = Customer(
+        document=10645567889,
+        name="Juan David",
+        lastname="Salgado"
+    )
+
     session.add(default_customer)
     session.commit()
 

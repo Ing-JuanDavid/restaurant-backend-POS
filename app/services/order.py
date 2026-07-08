@@ -13,7 +13,7 @@ from app.models.customer import BaseCustomer
 from datetime import date
 
 from fastapi import Depends, HTTPException, status
-from app.utils.exceptions import not_found, invalid
+from app.utils.exceptions import not_found, invalid, not_available
 
 
 class OrderService:
@@ -63,9 +63,6 @@ class OrderService:
         return to_public_order(db_order)
 
     def add_item(self, item: OrderItemCreate) -> PublicOrder:
-
-        db_order_item = OrderItem.model_validate(item)
-
         db_order = self.session.get(Order, item.order_id)
         db_menu_item = self.session.get(MenuItem, item.item_id)
 
@@ -75,40 +72,31 @@ class OrderService:
         if not db_menu_item:
             raise not_found("item")
 
-        if db_menu_item.quant:
+        db_order_item = OrderItem.model_validate(item)
 
+        # validation status
+        if not db_menu_item.status:
+            raise not_available(db_menu_item.name)
+
+        if db_menu_item.quant is not None:
             if item.quant > db_menu_item.quant:
-                raise HTTPException(
-                    status_code=status.HTTP_409_CONFLICT,
-                    detail="invalid quant"
-                )
-        else:
-            if db_menu_item.quant == 0 and db_menu_item.status:
-                db_menu_item.status = False
-                self.session.commit()
+                raise invalid("quant")
 
-        if (db_menu_item.status == False):
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail="item not available"
-            )
-
-        total_item = item.quant * db_menu_item.price
-
-        db_order_item.total_item = total_item
-        db_order.items.append(db_order_item)
-        db_order.total = calc_total_order(db_order.items)
-
-        if (db_menu_item.quant):
             db_menu_item.quant -= item.quant
 
+            if db_menu_item.quant == 0:
+                db_menu_item.status = False
+
+        db_order_item.total_item = db_menu_item.price * item.quant
+        db_order.items.append(db_order_item)
+        db_order.total = calc_total_order(db_order.items)
         self.session.commit()
         self.session.refresh(db_order)
-
         return to_public_order(db_order)
 
 
 # make update item order function
+
 
     def update_item(self, order_item_id: int, new_quat: int) -> PublicOrder:
         db_order_item = self.session.get(OrderItem, order_item_id)
