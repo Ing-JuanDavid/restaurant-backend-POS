@@ -1,6 +1,7 @@
 from app.models.order import OrderType, OrderStatus, CustomerType
 from sqlmodel import SQLModel
 from app.schemas.order_item import OrderItemPublic
+from datetime import date
 
 
 class BaseOrder(SQLModel):
@@ -22,5 +23,11 @@ class UpdateOrder(SQLModel):
 class PublicOrder(BaseOrder):
     order_id: int
     document: int
+    customer_name: str | None
+    phone: str | None
     total: int
+    date: date
+
+
+class PublicOrderDetails(PublicOrder):
     items: list[OrderItemPublic]

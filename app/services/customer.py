@@ -1,16 +1,21 @@
-from app.database import SessionDep
+from app.database import Session, SessionDep
 from sqlmodel import select
-from app.models.customer import *
+from app.models.customer import Customer
+from app.schemas.customer import CustomerCreate, CustomerUpdate, CustomerPublic
 from fastapi import Depends, HTTPException, status
 from typing import Annotated
 
 
 class CustomerService():
 
-    def __init__(self, session: SessionDep):
+    def __init__(self, session: Session):
         self.session = session
 
-    def create_customer(self, customer: BaseCustomer):
+    def get_customers(self) -> list[CustomerPublic]:
+        statment = select(Customer)
+        return self.session.exec(statment).all()
+
+    def create_customer(self, customer: CustomerCreate) -> CustomerPublic:
 
         db_customer = self.session.exec(select(Customer).where(
             Customer.document == customer.document)).first()
@@ -34,7 +39,7 @@ class CustomerService():
 
         return db_customer
 
-    def update_customer(self, document: int, customer: UpdateCustomer):
+    def update_customer(self, document: int, customer: CustomerUpdate):
         db_customer = self.session.exec(select(Customer).where(
             Customer.document == document)).first()
 

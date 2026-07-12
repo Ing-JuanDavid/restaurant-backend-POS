@@ -8,8 +8,10 @@ class OrderItemBase(SQLModel):
 
 class OrderItemPublic(OrderItemBase):
     id: int
-    order_id: int
+    name: str
+    unit_price: int
     total_item: int
+    order_id: int
 
 
 class OrderItemCreate(OrderItemBase):

@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Query
 from app.database import SessionDep
-from app.schemas.order import PublicOrder, CreateOrder
+from app.schemas.order import PublicOrder, CreateOrder, PublicOrderDetails
 from app.schemas.order_item import OrderItemCreate
 from app.services.order import OrderServiceDep
 from app.models.order import Order
@@ -16,17 +16,28 @@ async def create_order(order: CreateOrder, service: OrderServiceDep):
 
 
 @router.get("", response_model=list[PublicOrder])
-async def get_orders(service: OrderServiceDep):
+async def read_orders(service: OrderServiceDep):
     return service.get_orders()
 
 
-@router.post("/items", response_model=PublicOrder)
+@router.get("/{document}", response_model=list[PublicOrder], status_code=200)
+async def read_user_orders(document: int, service: OrderServiceDep):
+    orders = service.get_orders_document(document=document)
+    return orders
+
+
+@router.get("/{order_id}/details")
+async def read_order_items(order_id: int, service: OrderServiceDep):
+    return service.get_order_details(order_id)
+
+
+@router.post("/items", response_model=PublicOrderDetails)
 async def add_item(item: OrderItemCreate, service: OrderServiceDep):
     db_order = service.add_item(item=item)
     return db_order
 
 
-@router.post("/items/{item_id}", response_model=PublicOrder)
+@router.put("/items/{item_id}", response_model=PublicOrderDetails)
 async def update_item(item_id: int, new_quant: Annotated[int, Query(ge=1)], service: OrderServiceDep):
-    db_order = service.update_item(order_item_id=item_id, new_quat=new_quant)
+    db_order = service.update_item(order_item_id=item_id, new_quant=new_quant)
     return db_order

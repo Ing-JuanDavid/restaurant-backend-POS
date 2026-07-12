@@ -1,80 +1,43 @@
-from fastapi import APIRouter, Query, HTTPException, status
-from app.database import SessionDep
-from sqlmodel import select
-from app.models.menu import *
+from fastapi import APIRouter, Query, status
+from app.schemas.menu import MenuBase, MenuUpdate, MenuPublic
 from typing import Annotated
+from app.services.menu import MenuServiceDep
 
 router = APIRouter(prefix="/menu", tags=["menu"])
 
 
-@router.get("", response_model=list[PublicMenu])
+@router.get("", response_model=list[MenuPublic])
 async def read_menues(
-    session: SessionDep,
+    service: MenuServiceDep,
     offset: int = 0,
     limit: Annotated[int, Query(le=100)] = 100,
 ):
-    menues = session.exec(select(Menu).offset(offset).limit(limit)).all()
-    return menues
+    return service.get_menues(offset, limit)
 
 
-@router.post("", response_model=PublicMenu)
-async def create_menu(menu: BaseMenu, session: SessionDep):
-    db_menu = Menu.model_validate(menu)
-    session.add(db_menu)
-    session.commit()
-    session.refresh(db_menu)
+@router.post("", response_model=MenuPublic, status_code=status.HTTP_201_CREATED)
+async def create_menu(menu: MenuBase, service: MenuServiceDep):
+    db_menu = service.create_menu(menu)
     return db_menu
 
 
-@router.get("/{menu_id}", response_model=PublicMenu)
-async def find_menu(menu_id: int, session: SessionDep):
-    db_menu = session.get(Menu, menu_id)
-
-    if not db_menu:
-        HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="menu not found"
-        )
-
-    return db_menu
+@router.get("/{menu_id}", response_model=MenuPublic)
+async def find_menu(menu_id: int, service: MenuServiceDep):
+    return service.get_menu(menu_id)
 
 
-@router.put("/{menu_id}", response_model=PublicMenu)
+@router.patch("/{menu_id}", response_model=MenuPublic)
 async def update_menu(
         menu_id: int,
-        menu: BaseMenu,
-        session: SessionDep):
+        upd_menu: MenuUpdate,
+        service: MenuServiceDep):
 
-    menu_db = session.get(Menu, menu_id)
-
-    if not menu_db:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="menu not found"
-        )
-
-    menu_data = menu.model_dump(exclude_unset=True)
-    menu_db.sqlmodel_update(menu_data)
-    session.add(menu_db)
-    session.commit()
-    session.refresh(menu_db)
-    return menu_db
+    return service.update_menu(menu_id, upd_menu)
 
 
 @router.delete("/{menu_id}")
-async def delete_menu(menu_id: int, session: SessionDep):
-
-    menu_db = session.get(Menu, menu_id)
-
-    if not menu_db:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="menu not found"
-        )
-
-    session.delete(menu_db)
-    session.commit()
-
+async def delete_menu(menu_id: int, service: MenuServiceDep):
+    service.delete_menu(menu_id)
     return {"message": "ok"}
 
 
