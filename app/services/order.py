@@ -1,8 +1,9 @@
 from sqlmodel import select
 from sqlalchemy.orm import selectinload
-from app.database import SessionDep
 from typing import Annotated
-from app.services.customer import CustomerServiceDep
+from app.database import Session, SessionDep
+from app.services.customer import CustomerService, CustomerServiceDep
+from app.services.menu_item import MenuItemService, MenuItemServiceDep
 
 from app.schemas.order import CreateOrder, PublicOrder, PublicOrderDetails
 from app.schemas.order_item import OrderItemCreate
@@ -18,9 +19,18 @@ from app.utils.exceptions import not_found, invalid, not_available
 
 
 class OrderService:
-    def __init__(self, session: SessionDep, customer_service: CustomerServiceDep):
+    def __init__(self, session: Session, customer_service: CustomerService, menu_item_service: MenuItemService):
         self.session = session
         self.customer_service = customer_service
+        self.menu_item_service = menu_item_service
+
+    def get_order(self, order_id: int):
+        db_order = self.session.get(Order, order_id)
+
+        if not db_order:
+            raise not_found("Order")
+
+        return db_order
 
     def get_orders(self) -> list[PublicOrder]:
         orders = self.session.exec(select(Order).options(
@@ -29,11 +39,7 @@ class OrderService:
         return [to_public_order(o) for o in orders]
 
     def get_orders_document(self, document: int) -> PublicOrder:
-        db_customer = self.session.exec(
-            select(Customer).where(Customer.document == document)).first()
-
-        if not db_customer:
-            raise not_found("Customer")
+        db_customer = self.customer_service.get_customer_document(document)
 
         statement = select(Order).where(
             Order.customer_id == db_customer.customer_id)
@@ -42,10 +48,7 @@ class OrderService:
         return [to_public_order(o) for o in orders]
 
     def get_order_details(self, order_id: int) -> PublicOrderDetails:
-        db_order = self.session.get(Order, order_id)
-
-        if not db_order:
-            raise not_found("Order")
+        db_order = self.get_order(order_id)
 
         return to_public_order_details(db_order)
 
@@ -85,14 +88,8 @@ class OrderService:
         return to_public_order(db_order)
 
     def add_item(self, item: OrderItemCreate) -> PublicOrderDetails:
-        db_order = self.session.get(Order, item.order_id)
-        db_menu_item = self.session.get(MenuItem, item.item_id)
-
-        if not db_order:
-            raise not_found("order")
-
-        if not db_menu_item:
-            raise not_found("item")
+        db_order = self.get_order(item.order_id)
+        db_menu_item = self.menu_item_service.get_item(item.item_id)
 
         db_order_item = OrderItem.model_validate(item)
         db_order_item.name = db_menu_item.name
@@ -120,6 +117,7 @@ class OrderService:
 
 
 # make update item order function
+
 
     def update_item(self, order_item_id, new_quant: int) -> PublicOrderDetails:
         db_order_item = self.session.get(OrderItem, order_item_id)
@@ -193,9 +191,10 @@ def calc_total_order(items: list[OrderItem]) -> int:
 
 def get_order_service(
     session: SessionDep,
-    customer_service: CustomerServiceDep
+    customer_service: CustomerServiceDep,
+    menu_item_service: MenuItemServiceDep
 ):
-    return OrderService(session=session, customer_service=customer_service)
+    return OrderService(session=session, customer_service=customer_service, menu_item_service=menu_item_service)
 
 
 OrderServiceDep = Annotated[OrderService, Depends(get_order_service)]

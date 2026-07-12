@@ -1,5 +1,6 @@
 from app.database import Session, SessionDep
 from sqlmodel import select
+from app.utils.exceptions import not_found
 from app.models.customer import Customer
 from app.schemas.customer import CustomerCreate, CustomerUpdate, CustomerPublic
 from fastapi import Depends, HTTPException, status
@@ -39,15 +40,17 @@ class CustomerService():
 
         return db_customer
 
-    def update_customer(self, document: int, customer: CustomerUpdate):
+    def get_customer_document(self, document: int) -> Customer:
         db_customer = self.session.exec(select(Customer).where(
             Customer.document == document)).first()
 
         if not db_customer:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="customer not found"
-            )
+            raise not_found("Customer")
+
+        return db_customer
+
+    def update_customer(self, document: int, customer: CustomerUpdate):
+        db_customer = self.get_customer_document(document)
 
         customer_data = customer.model_dump(exclude_unset=True)
 
@@ -57,14 +60,7 @@ class CustomerService():
         return db_customer
 
     def delete_customer(self, document: int):
-        db_customer = self.session.exec(select(Customer).where(
-            Customer.document == document)).first()
-
-        if not db_customer:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="customer not found"
-            )
+        db_customer = self.get_customer_document(document)
 
         self.session.delete(db_customer)
         self.session.commit()
