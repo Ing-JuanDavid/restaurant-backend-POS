@@ -1,16 +1,14 @@
-from fastapi import APIRouter, Query
-from app.database import SessionDep
+from fastapi import APIRouter, Path, Query, status
 from app.schemas.order import PublicOrder, CreateOrder, PublicOrderDetails
 from app.schemas.order_item import OrderItemCreate
 from app.services.order import OrderServiceDep
-from app.models.order import Order
 from typing import Annotated
 
 
 router = APIRouter(prefix="/orders", tags=["order"])
 
 
-@router.post("", response_model=PublicOrder)
+@router.post("", response_model=PublicOrder, status_code=status.HTTP_201_CREATED)
 async def create_order(order: CreateOrder, service: OrderServiceDep):
     return service.create_order(order=order)
 
@@ -37,7 +35,20 @@ async def add_item(item: OrderItemCreate, service: OrderServiceDep):
     return db_order
 
 
-@router.put("/items/{item_id}", response_model=PublicOrderDetails)
-async def update_item(item_id: int, new_quant: Annotated[int, Query(ge=1)], service: OrderServiceDep):
-    db_order = service.update_item(order_item_id=item_id, new_quant=new_quant)
-    return db_order
+@router.patch("/items/{item_id}", response_model=PublicOrderDetails)
+async def update_item(
+    service: OrderServiceDep,
+    item_id: int,
+    new_quant: int = Query(gt=1)
+):
+    return service.update_item(order_item_id=item_id, new_quant=new_quant)
+
+
+@router.delete("/items/{item_id}")
+async def remove_item(
+    service: OrderServiceDep,
+    item_id: int = Path(gt=0)
+):
+    service.remove_item(item_id)
+
+    return {"message": "item removed"}

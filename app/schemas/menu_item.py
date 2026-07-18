@@ -7,7 +7,7 @@ class MenuItemBase(BaseModel):
     name: str
     price: Annotated[int, Query(ge=0)]
     status: bool = True
-    quant: Annotated[int | None, Query(gt=0)] = None
+    quant: Annotated[int | None, Query(ge=0)] = None
 
 
 class MenuItemCreate(MenuItemBase):

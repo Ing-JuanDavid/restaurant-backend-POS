@@ -21,7 +21,7 @@ async def create_menu_item(item: MenuItemCreate, service: MenuItemServiceDep):
 
 
 @router.patch("/items/{item_id}", response_model=MenuItemPublic)
-async def create_menu_item(
+async def update_menu_item(
     item_id: int,
     upd_item: MenuItemUpdate,
     service: MenuItemServiceDep

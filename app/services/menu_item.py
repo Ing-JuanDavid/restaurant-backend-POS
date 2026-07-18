@@ -57,6 +57,14 @@ class MenuItemService:
         self.session.delete(db_item)
         self.session.commit()
 
+    def update_menu_item_quantity(self, menu_item: MenuItem, quantity_delta: int) -> None:
+        if menu_item.quant is not None:
+            menu_item.quant += quantity_delta
+            menu_item.status = menu_item.quant > 0
+
+        elif quantity_delta > 0 and not menu_item.status:
+            menu_item.status = True
+
 
 def get_menu_item_service(session: SessionDep, menu_service: MenuServiceDep):
     return MenuItemService(session=session, menu_service=menu_service)

@@ -33,4 +33,6 @@ class Order(SQLModel, table=True):
     status: OrderStatus = Field(default=OrderStatus.PENDING)
 
     customer: Customer | None = Relationship(back_populates="orders")
-    items: list["OrderItem"] = Relationship(back_populates="order")
+    items: list["OrderItem"] = Relationship(back_populates="order", sa_relationship_kwargs={
+        "cascade": "all, delete-orphan"
+    })

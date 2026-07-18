@@ -9,8 +9,6 @@ from app.schemas.order import CreateOrder, PublicOrder, PublicOrderDetails
 from app.schemas.order_item import OrderItemCreate
 from app.models.order import Order, CustomerType
 from app.models.order_item import OrderItem
-from app.models.menu_item import MenuItem
-from app.models.customer import Customer
 from app.schemas.customer import CustomerCreate
 from datetime import date
 
@@ -24,7 +22,7 @@ class OrderService:
         self.customer_service = customer_service
         self.menu_item_service = menu_item_service
 
-    def get_order(self, order_id: int):
+    def get_order(self, order_id: int) -> Order:
         db_order = self.session.get(Order, order_id)
 
         if not db_order:
@@ -41,9 +39,9 @@ class OrderService:
     def get_orders_document(self, document: int) -> PublicOrder:
         db_customer = self.customer_service.get_customer_document(document)
 
-        statement = select(Order).where(
+        query = select(Order).where(
             Order.customer_id == db_customer.customer_id)
-        orders = self.session.exec(statement)
+        orders = self.session.exec(query).all()
 
         return [to_public_order(o) for o in orders]
 
@@ -87,6 +85,13 @@ class OrderService:
 
         return to_public_order(db_order)
 
+    def get_item(self, order_item_id: int) -> OrderItem:
+        db_order_item = self.session.get(OrderItem, order_item_id)
+
+        if not db_order_item:
+            raise not_found("Item")
+        return db_order_item
+
     def add_item(self, item: OrderItemCreate) -> PublicOrderDetails:
         db_order = self.get_order(item.order_id)
         db_menu_item = self.menu_item_service.get_item(item.item_id)
@@ -102,10 +107,10 @@ class OrderService:
             if item.quant > db_menu_item.quant:
                 raise invalid("quant")
 
-            db_menu_item.quant -= item.quant
-
-            if db_menu_item.quant == 0:
-                db_menu_item.status = False
+            self.menu_item_service.update_menu_item_quantity(
+                db_menu_item,
+                -item.quant
+            )
 
         db_order_item.unit_price = db_menu_item.price
         db_order_item.total_item = db_menu_item.price * item.quant
@@ -115,16 +120,10 @@ class OrderService:
         self.session.refresh(db_order)
         return to_public_order_details(db_order)
 
-
-# make update item order function
-
+    # make update item order function
 
     def update_item(self, order_item_id, new_quant: int) -> PublicOrderDetails:
-        db_order_item = self.session.get(OrderItem, order_item_id)
-
-        if not db_order_item:
-            raise not_found("Item")
-
+        db_order_item = self.get_item(order_item_id)
         db_menu_item = db_order_item.menu_item
         db_order = db_order_item.order
         old_quant = db_order_item.quant
@@ -136,9 +135,9 @@ class OrderService:
                 raise invalid("quant")
 
         # Actualizar inventario
-        if db_menu_item.quant is not None:
-            db_menu_item.quant -= difference
-            db_menu_item.status = db_menu_item.quant > 0
+
+        self.menu_item_service.update_menu_item_quantity(
+            db_menu_item, -difference)
 
         # Actualizar item
         db_order_item.quant = new_quant
@@ -151,6 +150,23 @@ class OrderService:
         self.session.refresh(db_order)
 
         return to_public_order_details(db_order)
+
+    def remove_item(self, order_item_id):
+        db_order_item = self.get_item(order_item_id)
+        db_menu_item = db_order_item.menu_item
+        db_order = db_order_item.order
+
+        if not db_menu_item or not db_order:
+            raise not_found("Order or menu item")
+
+        self.menu_item_service.update_menu_item_quantity(
+            db_menu_item,
+            db_order_item.quant
+        )
+
+        db_order.items.remove(db_order_item)
+        db_order.total = calc_total_order(db_order.items)
+        self.session.commit()
 
 
 def to_public_order(o: Order) -> PublicOrder:

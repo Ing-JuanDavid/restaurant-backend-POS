@@ -18,5 +18,5 @@ def invalid(entity: str):
 def not_available(entity: str):
     return HTTPException(
         status_code=status.HTTP_409_CONFLICT,
-        detail=f"{entity} not available"
+        detail=f"{entity} is not available"
     )
