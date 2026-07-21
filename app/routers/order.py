@@ -2,7 +2,7 @@ from fastapi import APIRouter, Path, Query, status
 from app.schemas.order import PublicOrder, CreateOrder, PublicOrderDetails
 from app.schemas.order_item import OrderItemCreate
 from app.services.order import OrderServiceDep
-from typing import Annotated
+from app.services.order_item import OrderItemServiceDep
 
 
 router = APIRouter(prefix="/orders", tags=["order"])
@@ -30,23 +30,23 @@ async def read_order_items(order_id: int, service: OrderServiceDep):
 
 
 @router.post("/items", response_model=PublicOrderDetails)
-async def add_item(item: OrderItemCreate, service: OrderServiceDep):
+async def add_item(item: OrderItemCreate, service: OrderItemServiceDep):
     db_order = service.add_item(item=item)
     return db_order
 
 
 @router.patch("/items/{item_id}", response_model=PublicOrderDetails)
 async def update_item(
-    service: OrderServiceDep,
+    service: OrderItemServiceDep,
     item_id: int,
-    new_quant: int = Query(gt=1)
+    new_quant: int = Query(gt=0)
 ):
     return service.update_item(order_item_id=item_id, new_quant=new_quant)
 
 
 @router.delete("/items/{item_id}")
 async def remove_item(
-    service: OrderServiceDep,
+    service: OrderItemServiceDep,
     item_id: int = Path(gt=0)
 ):
     service.remove_item(item_id)

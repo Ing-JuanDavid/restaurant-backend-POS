@@ -19,10 +19,3 @@ app.include_router(menu_item.router)
 app.include_router(customer.router)
 
 app.include_router(order.router)
-
-
-@app.get("/")
-async def hello():
-    return {
-        "message": "hello world"
-    }

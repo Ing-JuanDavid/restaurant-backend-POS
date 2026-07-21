@@ -27,10 +27,10 @@ class Order(SQLModel, table=True):
     order_id: int | None = Field(primary_key=True, default=None)
     customer_id: int = Field(foreign_key="customer.customer_id")
     total: int = Field(default=0)
-    date: date | None = Field(default=None)
+    date: date | None = None
 
-    order_type: OrderType = Field(default=OrderType.LOCAL)
-    status: OrderStatus = Field(default=OrderStatus.PENDING)
+    order_type: OrderType = OrderType.LOCAL
+    status: OrderStatus = OrderStatus.PENDING
 
     customer: Customer | None = Relationship(back_populates="orders")
     items: list["OrderItem"] = Relationship(back_populates="order", sa_relationship_kwargs={

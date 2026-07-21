@@ -22,16 +22,16 @@ class MenuItemService:
         return db_item
 
     def get_all_items(self) -> list[MenuItemPublic]:
-        statement = select(MenuItem)
-        items = self.session.exec(statement).all()
+        query = select(MenuItem)
+        items = self.session.exec(query).all()
         return items
 
     def get_items_menu(self, menu_id: int) -> list[MenuItemPublic]:
         db_menu = self.menu_service.get_menu(menu_id)
 
-        statement = select(MenuItem).where(MenuItem.menu_id == menu_id)
+        query = select(MenuItem).where(MenuItem.menu_id == menu_id)
 
-        items = self.session.exec(statement).all()
+        items = self.session.exec(query).all()
         return items
 
     def add_item(self, item: MenuItemCreate) -> MenuItemPublic:
@@ -57,7 +57,7 @@ class MenuItemService:
         self.session.delete(db_item)
         self.session.commit()
 
-    def update_menu_item_quantity(self, menu_item: MenuItem, quantity_delta: int) -> None:
+    def update_item_quantity(self, menu_item: MenuItem, quantity_delta: int) -> None:
         if menu_item.quant is not None:
             menu_item.quant += quantity_delta
             menu_item.status = menu_item.quant > 0

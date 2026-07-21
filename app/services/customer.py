@@ -18,8 +18,7 @@ class CustomerService():
 
     def create_customer(self, customer: CustomerCreate) -> CustomerPublic:
 
-        db_customer = self.session.exec(select(Customer).where(
-            Customer.document == customer.document)).first()
+        db_customer = self.get_customer(customer.document)
 
         if db_customer:
             raise HTTPException(
