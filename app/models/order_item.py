@@ -4,7 +4,7 @@ from app.models.order import Order
 
 
 class OrderItem(SQLModel, table=True):
-    id: int | None = Field(default=None, primary_key=True)
+    order_item_id: int | None = Field(default=None, primary_key=True)
     name: str | None = None
     quant: int = Field(ge=0)
     unit_price: int | None = None

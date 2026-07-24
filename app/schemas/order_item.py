@@ -7,7 +7,7 @@ class OrderItemBase(SQLModel):
 
 
 class OrderItemPublic(OrderItemBase):
-    id: int
+    order_item_id: int
     name: str
     unit_price: int
     total_item: int

@@ -6,7 +6,7 @@ from app.models.menu import *
 from app.models.menu_item import *
 from app.models.customer import *
 from app.models.order_item import *
-from ..config import settings
+from app.config import settings
 
 
 # engine creation
