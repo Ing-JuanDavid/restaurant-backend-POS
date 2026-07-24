@@ -1,33 +1,38 @@
 from app.models.order import OrderType, OrderStatus, CustomerType
-from sqlmodel import SQLModel
+from pydantic import BaseModel, Field
 from app.schemas.order_item import OrderItemPublic
-from datetime import date
+from datetime import datetime
 
 
-class BaseOrder(SQLModel):
+class OrderBase(BaseModel):
     status: OrderStatus = OrderStatus.PENDING
     order_type: OrderType = OrderType.LOCAL
+    document: int | None = None
+    customer_name: str | None = Field(max_length=20, default=None)
+    cellphone: str | None = Field(max_length=12, default=None)
+    address: None | str = Field(max_length=50, default=None)
 
 
-class CreateOrder(BaseOrder):
-    document: int | None
+class OrderCreate(OrderBase):
     customer_type: CustomerType = CustomerType.DEFAULT_CUSTOMER
 
 
-class UpdateOrder(SQLModel):
+class OrderUpdate(BaseModel):
     status: OrderStatus | None = None
     order_type: OrderType | None = None
     document: int | None = None
+    customer_name: str | None = None
+    cellphone: str | None = None
+    address: str | None = None
 
 
-class PublicOrder(BaseOrder):
+class OrderPublic(OrderBase):
     order_id: int
-    document: int
     customer_name: str | None
-    phone: str | None
+    cellphone: str | None
     total: int
-    date: date
+    created_at: datetime
 
 
-class PublicOrderDetails(PublicOrder):
+class OrderDetailsPublic(OrderPublic):
     items: list[OrderItemPublic]

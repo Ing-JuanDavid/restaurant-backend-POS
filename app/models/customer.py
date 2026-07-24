@@ -10,7 +10,7 @@ class Customer(SQLModel, table=True):
     document: int = Field(unique=True, index=True)
     name: str = Field(max_length=50)
     lastname: str | None = Field(max_length=50, default=None)
-    phone: str | None = Field(max_length=20, default=None)
+    cellphone: str | None = Field(max_length=20, default=None)
     address: str | None = None
 
     orders: list["Order"] = Relationship(

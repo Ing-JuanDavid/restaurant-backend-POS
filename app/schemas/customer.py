@@ -4,7 +4,7 @@ from pydantic import BaseModel, Field
 
 class CustomerBase(BaseModel):
     lastname: str | None = Field(max_length=50, default=None)
-    phone: str | None = Field(max_length=20, default=None)
+    cellphone: str | None = Field(max_length=20, default=None)
     address: str | None = None
 
 

@@ -6,7 +6,7 @@ from fastapi import Depends
 from app.utils.exceptions import not_found, not_available, invalid
 from app.models.order_item import OrderItem
 from app.schemas.order_item import OrderItemCreate
-from app.schemas.order import PublicOrderDetails
+from app.schemas.order import OrderDetailsPublic
 
 
 class OrderItemService:
@@ -23,7 +23,7 @@ class OrderItemService:
             raise not_found("Item")
         return db_order_item
 
-    def add_item(self, item: OrderItemCreate) -> PublicOrderDetails:
+    def add_item(self, item: OrderItemCreate) -> OrderDetailsPublic:
         db_order = self.order_service.get_order(item.order_id)
         db_menu_item = self.menu_item_service.get_item(item.item_id)
 
@@ -53,7 +53,7 @@ class OrderItemService:
 
     # make update item order function
 
-    def update_item(self, order_item_id, new_quant: int) -> PublicOrderDetails:
+    def update_item(self, order_item_id, new_quant: int) -> OrderDetailsPublic:
         db_order_item = self.get_item(order_item_id)
         db_menu_item = db_order_item.menu_item
         db_order = db_order_item.order
