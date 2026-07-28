@@ -14,4 +14,8 @@ class Customer(SQLModel, table=True):
     address: str | None = None
 
     orders: list["Order"] = Relationship(
-        back_populates="customer", cascade_delete=True)
+        back_populates="customer",
+        sa_relationship_kwargs={
+            "cascade": "all, delete-orphan"
+        }
+    )

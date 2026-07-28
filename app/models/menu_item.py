@@ -8,4 +8,5 @@ class MenuItem(SQLModel, table=True):
     status: bool = True
     quant: int | None = Field(ge=0)
     menu_id: int = Field(foreign_key="menu.menu_id")
-    order_items: list["OrderItem"] = Relationship(back_populates="menu_item")
+    order_details: list["OrderDetail"] = Relationship(
+        back_populates="menu_item")

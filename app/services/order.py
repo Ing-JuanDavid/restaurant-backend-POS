@@ -6,7 +6,7 @@ from app.services.customer import CustomerService, CustomerServiceDep
 
 from app.schemas.order import OrderCreate, OrderUpdate, OrderPublic, OrderDetailsPublic
 from app.models.order import Order, CustomerType, OrderStatus
-from app.models.order_item import OrderItem
+from app.models.order_detail import OrderDetail
 from app.models.customer import Customer
 from app.schemas.customer import CustomerCreate
 from datetime import datetime

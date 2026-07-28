@@ -4,7 +4,7 @@ from app.services.menu_item import MenuItemService, MenuItemServiceDep
 from typing import Annotated
 from fastapi import Depends
 from app.utils.exceptions import not_found, not_available, invalid
-from app.models.order_item import OrderItem
+from app.models.order_detail import OrderDetail
 from app.schemas.order_item import OrderItemCreate
 from app.schemas.order import OrderDetailsPublic
 
