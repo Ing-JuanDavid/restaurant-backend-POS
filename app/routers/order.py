@@ -2,9 +2,9 @@ from fastapi import APIRouter, Path, Query, status
 from typing import Annotated
 from app.models.order import OrderStatus, CustomerType
 from app.schemas.order import OrderCreate, OrderUpdate, OrderPublic, OrderDetailsPublic
-from app.schemas.order_item import OrderItemCreate
+from app.schemas.order_detail import OrderDetailCreate
 from app.services.order import OrderServiceDep
-from app.services.order_item import OrderItemServiceDep
+from app.services.order_detail import OrderItemServiceDep
 
 
 router = APIRouter(prefix="/orders", tags=["order"])
@@ -46,7 +46,7 @@ async def update_order(
 
 
 @router.post("/items", response_model=OrderDetailsPublic)
-async def add_item(item: OrderItemCreate, service: OrderItemServiceDep):
+async def add_item(item: OrderDetailCreate, service: OrderItemServiceDep):
     db_order = service.add_item(item=item)
     return db_order
 

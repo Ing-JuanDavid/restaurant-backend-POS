@@ -5,7 +5,7 @@ from typing import Annotated
 from fastapi import Depends
 from app.utils.exceptions import not_found, not_available, invalid
 from app.models.order_detail import OrderDetail
-from app.schemas.order_item import OrderItemCreate
+from app.schemas.order_detail import OrderDetailCreate, OrderDetailPublic
 from app.schemas.order import OrderDetailsPublic
 
 
@@ -16,48 +16,48 @@ class OrderItemService:
         self.order_service = order_service
         self.menu_item_service = menu_item_service
 
-    def get_item(self, order_item_id: int) -> OrderItem:
-        db_order_item = self.session.get(OrderItem, order_item_id)
+    def get_item(self, order_item_id: int) -> OrderDetail:
+        db_order_item = self.session.get(OrderDetail, order_item_id)
 
         if not db_order_item:
             raise not_found("Item")
         return db_order_item
 
-    def add_item(self, item: OrderItemCreate) -> OrderDetailsPublic:
+    def add_item(self, item: OrderDetailCreate) -> OrderDetailsPublic:
         db_order = self.order_service.get_order(item.order_id)
         db_menu_item = self.menu_item_service.get_item(item.item_id)
 
-        db_order_item = OrderItem.model_validate(item)
-        db_order_item.name = db_menu_item.name
+        db_order_item = OrderDetail.model_validate(item)
 
         # validation status
         if not db_menu_item.status:
             raise not_available(db_menu_item.name)
 
         if db_menu_item.quant is not None:
-            if item.quant > db_menu_item.quant:
+            if item.quantity > db_menu_item.quant:
                 raise invalid("quant")
 
             self.menu_item_service.update_item_quantity(
                 db_menu_item,
-                -item.quant
+                -item.quantity
             )
 
         db_order_item.unit_price = db_menu_item.price
-        db_order_item.total_item = db_menu_item.price * item.quant
-        db_order.items.append(db_order_item)
-        db_order.total = self.order_service.calc_total_order(db_order.items)
+        db_order_item.subtotal = db_menu_item.price * item.quantity
+        db_order.order_details.append(db_order_item)
+        db_order.total = self.order_service.calc_total_order(
+            db_order.order_details)
         self.session.commit()
         self.session.refresh(db_order)
         return self.order_service.to_public_order_details(db_order)
 
     # make update item order function
 
-    def update_item(self, order_item_id, new_quant: int) -> OrderDetailsPublic:
+    def update_item(self, order_item_id: int, new_quant: int) -> OrderDetailsPublic:
         db_order_item = self.get_item(order_item_id)
         db_menu_item = db_order_item.menu_item
         db_order = db_order_item.order
-        old_quant = db_order_item.quant
+        old_quant = db_order_item.quantity
         difference = new_quant - old_quant
 
         # Validar aumento
@@ -71,11 +71,12 @@ class OrderItemService:
             db_menu_item, -difference)
 
         # Actualizar item
-        db_order_item.quant = new_quant
-        db_order_item.total_item = new_quant * db_menu_item.price
+        db_order_item.quantity = new_quant
+        db_order_item.subtotal = new_quant * db_menu_item.price
 
         # Recalcular total
-        db_order.total = self.order_service.calc_total_order(db_order.items)
+        db_order.total = self.order_service.calc_total_order(
+            db_order.order_details)
 
         self.session.commit()
         self.session.refresh(db_order)
@@ -92,11 +93,12 @@ class OrderItemService:
 
         self.menu_item_service.update_item_quantity(
             db_menu_item,
-            db_order_item.quant
+            db_order_item.quantity
         )
 
-        db_order.items.remove(db_order_item)
-        db_order.total = self.order_service.calc_total_order(db_order.items)
+        db_order.order_details.remove(db_order_item)
+        db_order.total = self.order_service.calc_total_order(
+            db_order.order_details)
         self.session.commit()
 
 

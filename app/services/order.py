@@ -89,8 +89,8 @@ class OrderService:
             status=order.status,
             created_at=datetime.now(),
             customer_name=order.customer_name if order.customer_name else db_customer.name,
-            cellphone=order.cellphone if order.cellphone else db_customer.cellphone,
-            address=order.address if order.address else db_customer.address
+            phone=order.phone if order.phone else db_customer.cellphone,
+            delivery_address=order.delivery_address if order.delivery_address else db_customer.address
         )
 
         self.session.add(db_order)
@@ -119,8 +119,8 @@ class OrderService:
             status=o.status,
             document=o.customer.document if o.customer else None,
             customer_name=o.customer_name,
-            cellphone=o.cellphone,
-            address=o.address
+            phone=o.phone,
+            delivery_address=o.delivery_address
         )
 
     def to_public_order_details(self, o: Order) -> OrderDetailsPublic:
@@ -133,15 +133,15 @@ class OrderService:
             status=o.status,
             document=o.customer.document if o.customer else None,
             customer_name=o.customer_name,
-            cellphone=o.cellphone,
-            address=o.address,
-            items=o.items if o.items else []
+            phone=o.phone,
+            delivery_address=o.delivery_address,
+            items=o.order_details if o.order_details else []
         )
 
-    def calc_total_order(self, items: list[OrderItem]) -> int:
+    def calc_total_order(self, items: list[OrderDetail]) -> int:
         total = 0
         for i in items:
-            total += i.total_item
+            total += i.subtotal
         return total
 
 
