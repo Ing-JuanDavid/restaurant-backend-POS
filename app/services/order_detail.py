@@ -9,42 +9,42 @@ from app.schemas.order_detail import OrderDetailCreate, OrderDetailPublic
 from app.schemas.order import OrderDetailsPublic
 
 
-class OrderItemService:
+class OrderDetailService:
 
     def __init__(self, session: Session, order_service: OrderService, menu_item_service: MenuItemService):
         self.session = session
         self.order_service = order_service
         self.menu_item_service = menu_item_service
 
-    def get_item(self, order_item_id: int) -> OrderDetail:
-        db_order_item = self.session.get(OrderDetail, order_item_id)
+    def get_order_detail(self, detail_id: int) -> OrderDetail:
+        db_order_detail = self.session.get(OrderDetail, detail_id)
 
-        if not db_order_item:
-            raise not_found("Item")
-        return db_order_item
+        if not db_order_detail:
+            raise not_found("Detalle")
+        return db_order_detail
 
-    def add_item(self, item: OrderDetailCreate) -> OrderDetailsPublic:
-        db_order = self.order_service.get_order(item.order_id)
-        db_menu_item = self.menu_item_service.get_item(item.item_id)
+    def add_order_detail(self, order_detail: OrderDetailCreate) -> OrderDetailsPublic:
+        db_order = self.order_service.get_order(order_detail.order_id)
+        db_menu_item = self.menu_item_service.get_item(order_detail.item_id)
 
-        db_order_item = OrderDetail.model_validate(item)
+        db_order_detail = OrderDetail.model_validate(order_detail)
 
         # validation status
         if not db_menu_item.status:
-            raise not_available(db_menu_item.name)
+            raise not_available("item " + order_detail.item_id)
 
         if db_menu_item.quant is not None:
-            if item.quantity > db_menu_item.quant:
-                raise invalid("quant")
+            if order_detail.quantity > db_menu_item.quant:
+                raise invalid("quantity")
 
             self.menu_item_service.update_item_quantity(
                 db_menu_item,
-                -item.quantity
+                -order_detail.quantity
             )
 
-        db_order_item.unit_price = db_menu_item.price
-        db_order_item.subtotal = db_menu_item.price * item.quantity
-        db_order.order_details.append(db_order_item)
+        db_order_detail.unit_price = db_menu_item.price
+        db_order_detail.subtotal = db_menu_item.price * order_detail.quantity
+        db_order.order_details.append(db_order_detail)
         db_order.total = self.order_service.calc_total_order(
             db_order.order_details)
         self.session.commit()
@@ -54,7 +54,7 @@ class OrderItemService:
     # make update item order function
 
     def update_item(self, order_item_id: int, new_quant: int) -> OrderDetailsPublic:
-        db_order_item = self.get_item(order_item_id)
+        db_order_item = self.get_order_detail(order_item_id)
         db_menu_item = db_order_item.menu_item
         db_order = db_order_item.order
         old_quant = db_order_item.quantity
@@ -84,7 +84,7 @@ class OrderItemService:
         return self.order_service.to_public_order_details(db_order)
 
     def remove_item(self, order_item_id):
-        db_order_item = self.get_item(order_item_id)
+        db_order_item = self.get_order_detail(order_item_id)
         db_menu_item = db_order_item.menu_item
         db_order = db_order_item.order
 
@@ -106,9 +106,9 @@ def get_order_item_service(
     session: SessionDep,
     order_service: OrderServiceDep,
     menu_item_service: MenuItemServiceDep
-) -> OrderItemService:
-    return OrderItemService(session=session, order_service=order_service, menu_item_service=menu_item_service)
+) -> OrderDetailService:
+    return OrderDetailService(session=session, order_service=order_service, menu_item_service=menu_item_service)
 
 
-OrderItemServiceDep = Annotated[OrderItemService,
+OrderItemServiceDep = Annotated[OrderDetailService,
                                 Depends(get_order_item_service)]

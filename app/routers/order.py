@@ -46,8 +46,8 @@ async def update_order(
 
 
 @router.post("/items", response_model=OrderDetailsPublic)
-async def add_item(item: OrderDetailCreate, service: OrderItemServiceDep):
-    db_order = service.add_item(item=item)
+async def add_item(order_detail: OrderDetailCreate, service: OrderItemServiceDep):
+    db_order = service.add_order_detail(order_detail=order_detail)
     return db_order
 
 
