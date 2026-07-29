@@ -45,26 +45,26 @@ async def update_order(
     return service.update_order(order_id, order)
 
 
-@router.post("/items", response_model=OrderDetailsPublic)
-async def add_item(order_detail: OrderDetailCreate, service: OrderItemServiceDep):
+@router.post("/details", response_model=OrderDetailsPublic)
+async def add_detail(order_detail: OrderDetailCreate, service: OrderItemServiceDep):
     db_order = service.add_order_detail(order_detail=order_detail)
     return db_order
 
 
-@router.patch("/items/{item_id}", response_model=OrderDetailsPublic)
-async def update_item(
+@router.patch("/details/{detail_id}", response_model=OrderDetailsPublic)
+async def update_detail(
     service: OrderItemServiceDep,
-    item_id: int,
+    detail_id: int,
     new_quant: int = Query(gt=0)
 ):
-    return service.update_item(order_item_id=item_id, new_quant=new_quant)
+    return service.update_order_detail(order_detail_id=detail_id, new_quant=new_quant)
 
 
-@router.delete("/items/{item_id}")
-async def remove_item(
+@router.delete("/details/{detail_id}")
+async def remove_detail(
     service: OrderItemServiceDep,
-    item_id: int = Path(gt=0)
+    detail_id: int = Path(gt=0)
 ):
-    service.remove_item(item_id)
+    service.remove_order_detail(detail_id)
 
-    return {"message": "item removed"}
+    return {"message": "detail removed"}
