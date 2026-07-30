@@ -12,6 +12,7 @@ class OrderDetailCreate(OrderDetailBase):
 
 class OrderDetailPublic(OrderDetailBase):
     detail_id: int
+    product_name: str
     unit_price: int
     subtotal: int
     order_id: int

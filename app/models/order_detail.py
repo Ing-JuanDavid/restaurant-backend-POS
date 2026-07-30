@@ -5,6 +5,7 @@ from app.models.order import Order
 
 class OrderDetail(SQLModel, table=True):
     detail_id: int | None = Field(default=None, primary_key=True)
+    product_name: str | None = Field(max_length=50, default=None)
     quantity: int = Field(ge=0)
     unit_price: int | None = None
     subtotal: int | None = None

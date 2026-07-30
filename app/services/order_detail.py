@@ -42,6 +42,7 @@ class OrderDetailService:
                 -order_detail.quantity
             )
 
+        db_order_detail.product_name = db_menu_item.name
         db_order_detail.unit_price = db_menu_item.price
         db_order_detail.subtotal = db_menu_item.price * order_detail.quantity
         db_order.order_details.append(db_order_detail)
