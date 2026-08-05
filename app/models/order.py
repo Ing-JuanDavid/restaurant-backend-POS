@@ -44,4 +44,5 @@ class Order(SQLModel, table=True):
         sa_relationship_kwargs={
             "cascade": "all, delete-orphan"
         }
+
     )
