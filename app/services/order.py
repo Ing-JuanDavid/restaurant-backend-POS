@@ -3,6 +3,7 @@ from sqlalchemy.orm import selectinload
 from typing import Annotated
 from app.database import Session, SessionDep
 from app.services.customer import CustomerService, CustomerServiceDep
+from app.services.sales import SalesService, SalesServiceDep
 
 from app.schemas.order import OrderCreate, OrderUpdate, OrderPublic, OrderDetailsPublic
 from app.models.order import Order, CustomerType, OrderStatus
@@ -16,9 +17,10 @@ from app.utils.exceptions import not_found
 
 
 class OrderService:
-    def __init__(self, session: Session, customer_service: CustomerService):
+    def __init__(self, session: Session, customer_service: CustomerService, sales_service: SalesService):
         self.session = session
         self.customer_service = customer_service
+        self.sales_service = sales_service
 
     def get_order(self, order_id: int) -> Order:
         db_order = self.session.get(Order, order_id)
@@ -97,6 +99,8 @@ class OrderService:
         self.session.commit()
         self.session.refresh(db_order, attribute_names=["customer"])
 
+        self.sales_service.create_sale(db_order)
+
         return self.to_public_order(db_order)
 
     def update_order(self, order_id: int, upd_order: OrderUpdate) -> OrderPublic:
@@ -148,8 +152,9 @@ class OrderService:
 def get_order_service(
     session: SessionDep,
     customer_service: CustomerServiceDep,
+    sales_service: SalesServiceDep
 ):
-    return OrderService(session=session, customer_service=customer_service)
+    return OrderService(session=session, customer_service=customer_service, sales_service=sales_service)
 
 
 OrderServiceDep = Annotated[OrderService, Depends(get_order_service)]

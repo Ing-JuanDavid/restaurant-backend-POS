@@ -13,7 +13,6 @@ class OrderStatus(str, Enum):
     PENDING = "PENDIENTE"
     READY = "LISTO"
     DELIVERED = "ENTREGADO"
-    PAID = "PAGADO"
     CANCELLED = "CANCELADO"
 
 
