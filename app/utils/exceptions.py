@@ -20,3 +20,17 @@ def not_available(entity: str):
         status_code=status.HTTP_409_CONFLICT,
         detail=f"{entity} is not available"
     )
+
+
+def sale_paid():
+    return HTTPException(
+        status_code=status.HTTP_409_CONFLICT,
+        detail="sale already paid"
+    )
+
+
+def invalid_action(action: str):
+    return HTTPException(
+        status_code=status.HTTP_409_CONFLICT,
+        detail=f"{action}, invalid action"
+    )

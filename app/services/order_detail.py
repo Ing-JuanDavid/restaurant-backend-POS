@@ -3,7 +3,9 @@ from app.services.order import OrderService, OrderServiceDep
 from app.services.menu_item import MenuItemService, MenuItemServiceDep
 from typing import Annotated
 from fastapi import Depends
-from app.utils.exceptions import not_found, not_available, invalid
+from app.utils.exceptions import not_found, not_available, invalid, invalid_action
+from app.models.order import OrderStatus
+from app.models.sales import SaleStatus
 from app.models.order_detail import OrderDetail
 from app.schemas.order_detail import OrderDetailCreate, OrderDetailPublic
 from app.schemas.order import OrderDetailsPublic
@@ -25,9 +27,13 @@ class OrderDetailService:
 
     def add_order_detail(self, order_detail: OrderDetailCreate) -> OrderDetailsPublic:
         db_order = self.order_service.get_order(order_detail.order_id)
+        db_sale = db_order.sale
         db_menu_item = self.menu_item_service.get_item(order_detail.item_id)
 
         db_order_detail = OrderDetail.model_validate(order_detail)
+
+        if not db_order.status == OrderStatus.PENDING or not db_sale.status == SaleStatus.PENDIENTE:
+            raise invalid_action("add detail")
 
         # validation status
         if not db_menu_item.status:
@@ -44,13 +50,10 @@ class OrderDetailService:
 
         db_order_detail.product_name = db_menu_item.name
         db_order_detail.unit_price = db_menu_item.price
-        db_order_detail.subtotal = db_menu_item.price * order_detail.quantity
+        db_order_detail.subtotal = db_order_detail.unit_price * order_detail.quantity
         db_order.order_details.append(db_order_detail)
-        db_order.total = self.order_service.calc_total_order(
-            db_order.order_details)
-        self.session.commit()
-        self.session.refresh(db_order)
-        return self.order_service.to_public_order_details(db_order)
+        self.order_service.update_order_totals(db_order)
+        return self.order_service.to_public_order_details(self.order_service.save_order(db_order))
 
     # make update item order function
 
@@ -58,8 +61,12 @@ class OrderDetailService:
         db_order_detail = self.get_order_detail(order_detail_id)
         db_menu_item = db_order_detail.menu_item
         db_order = db_order_detail.order
+        db_sale = db_order.sale
         old_quant = db_order_detail.quantity
         difference = new_quant - old_quant
+
+        if not db_order.status == OrderStatus.PENDING or not db_sale.status == SaleStatus.PENDIENTE:
+            raise invalid_action("update detail")
 
         # Validar aumento
         if difference > 0:
@@ -73,21 +80,20 @@ class OrderDetailService:
 
         # Actualizar detalle
         db_order_detail.quantity = new_quant
-        db_order_detail.subtotal = new_quant * db_menu_item.price
+        db_order_detail.subtotal = new_quant * db_order_detail.unit_price
 
         # Recalcular total
-        db_order.total = self.order_service.calc_total_order(
-            db_order.order_details)
-
-        self.session.commit()
-        self.session.refresh(db_order)
-
-        return self.order_service.to_public_order_details(db_order)
+        self.order_service.update_order_totals(db_order)
+        return self.order_service.to_public_order_details(self.order_service.save_order(db_order))
 
     def remove_order_detail(self, order_detail_id):
         db_order_detail = self.get_order_detail(order_detail_id)
         db_menu_item = db_order_detail.menu_item
         db_order = db_order_detail.order
+        db_sale = db_order.sale
+
+        if not db_order.status == OrderStatus.PENDING or not db_sale.status == SaleStatus.PENDIENTE:
+            raise invalid_action("delete detail")
 
         if not db_menu_item or not db_order:
             raise not_found("Order or menu item")
@@ -98,8 +104,7 @@ class OrderDetailService:
         )
 
         db_order.order_details.remove(db_order_detail)
-        db_order.total = self.order_service.calc_total_order(
-            db_order.order_details)
+        self.order_service.update_order_totals(db_order)
         self.session.commit()
 
 

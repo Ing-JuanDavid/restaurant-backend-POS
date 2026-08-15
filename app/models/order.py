@@ -12,7 +12,7 @@ class CustomerType(str, Enum):
 class OrderStatus(str, Enum):
     PENDING = "PENDIENTE"
     READY = "LISTO"
-    DELIVERED = "ENTREGADO"
+    DELIVERED = "ENTREGADA"
     CANCELLED = "CANCELADO"
 
 
@@ -43,5 +43,6 @@ class Order(SQLModel, table=True):
         sa_relationship_kwargs={
             "cascade": "all, delete-orphan"
         }
-
     )
+
+    sale: "Sale" = Relationship(back_populates="order")

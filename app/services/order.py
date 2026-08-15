@@ -96,8 +96,7 @@ class OrderService:
         )
 
         self.session.add(db_order)
-        self.session.commit()
-        self.session.refresh(db_order, attribute_names=["customer"])
+        self.save_order(db_order)
 
         self.sales_service.create_sale(db_order)
 
@@ -109,9 +108,7 @@ class OrderService:
         order_data = upd_order.model_dump(exclude_unset=True)
 
         db_order.sqlmodel_update(order_data)
-        self.session.commit()
-        self.session.refresh(db_order)
-        return self.to_public_order(db_order)
+        return self.to_public_order(self.save_order(db_order))
 
     def to_public_order(self, o: Order) -> OrderPublic:
         return OrderPublic(
@@ -142,11 +139,22 @@ class OrderService:
             items=o.order_details if o.order_details else []
         )
 
-    def calc_total_order(self, items: list[OrderDetail]) -> int:
+    def save_order(self, order: Order) -> Order:
+        self.session.commit()
+        self.session.refresh(order)
+        return order
+
+    def __calc_total_order(self, items: list[OrderDetail]) -> int:
         total = 0
         for i in items:
             total += i.subtotal
         return total
+
+    def update_order_totals(self, order: Order):
+        order.total = self.__calc_total_order(order.order_details)
+
+        if order.sale:
+            order.sale.total = order.total
 
 
 def get_order_service(

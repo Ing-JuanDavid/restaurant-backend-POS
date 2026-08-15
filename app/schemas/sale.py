@@ -1,5 +1,6 @@
 from pydantic import BaseModel, Field
 from app.models.sales import SaleStatus
+from app.schemas.payment import PaymentPublic
 from datetime import datetime
 
 
@@ -18,3 +19,12 @@ class SalePublic(BaseModel):
     status: SaleStatus
     order_id: int
     created_at: datetime
+
+
+class SaleSummary(BaseModel):
+    sale_id: int
+    order_id: int
+    total: int
+    paid: int
+    pending: int
+    status: SaleStatus
