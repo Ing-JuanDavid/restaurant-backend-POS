@@ -2,20 +2,22 @@ from app.database import Session, SessionDep
 
 from app.models.sales import SaleStatus, Payment
 from app.services.sales import SalesService, SalesServiceDep
+from app.services.cash import CashSessionService, CashSessionServiceDep
 from app.schemas.sale import SaleSummary
 from app.schemas.payment import PaymentPublic, PaymentCreate, PaymentUpdate
 from fastapi import Depends
 from typing import Annotated
 
-from app.utils.exceptions import sale_paid, invalid, not_found, invalid_action
+from app.utils.exceptions import sale_paid, invalid, not_found, invalid_action, no_cash_opened
 from datetime import datetime
 
 
 class PaymentService:
 
-    def __init__(self, session: Session, sale_service: SalesService):
+    def __init__(self, session: Session, sale_service: SalesService, cash_service: CashSessionService):
         self.session = session
         self.sale_service = sale_service
+        self.cash_service = cash_service
 
     def get_payment(self, payment_id: int) -> Payment:
         db_payment = self.session.get(Payment, payment_id)
@@ -31,6 +33,11 @@ class PaymentService:
         if db_sale.status == SaleStatus.PAGADA:
             raise sale_paid()
 
+        opened_cash = self.cash_service.get_opened_cash()
+
+        if not opened_cash:
+            raise no_cash_opened()
+
         paid = sum(p.amount for p in db_sale.payments)
 
         pending = db_sale.total - paid
@@ -43,6 +50,9 @@ class PaymentService:
         db_sale.payments.append(db_payment)
 
         paid, pending = self.sale_service._update_sale_status(db_sale)
+
+        opened_cash.movements.append(
+            self.cash_service.payment_to_cash_movement(db_payment))
 
         self.session.commit()
         self.session.refresh(db_payment)
@@ -95,8 +105,8 @@ class PaymentService:
         return db_sale.payments
 
 
-def get_payment_service(session: SessionDep, sale_service: SalesServiceDep):
-    return PaymentService(session=session, sale_service=sale_service)
+def get_payment_service(session: SessionDep, sale_service: SalesServiceDep, cash_service: CashSessionServiceDep):
+    return PaymentService(session=session, sale_service=sale_service, cash_service=cash_service)
 
 
 PaymentServiceDep = Annotated[PaymentService, Depends(get_payment_service)]

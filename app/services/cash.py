@@ -1,5 +1,6 @@
 from app.database import Session, SessionDep
-from app.models.cash import CashSession, CashStatus
+from app.models.cash import CashSession, CashStatus, CashMovement
+from app.models.sales import Payment
 from typing import Annotated
 from fastapi import Depends
 from app.models.cash import MovementType
@@ -65,6 +66,15 @@ class CashSessionService:
         self.save_cash(db_cash)
         return db_cash
 
+    def payment_to_cash_movement(self, payment: Payment) -> CashMovement:
+        cash_movement = CashMovement(
+            amount=payment.amount,
+            payment_method=payment.method,
+            created_at=datetime.now(),
+        )
+
+        return cash_movement
+
     def save_cash(self, cash: CashSession):
         self.session.commit()
         self.session.refresh(cash)
@@ -90,5 +100,5 @@ def get_cash_session_service(session: SessionDep) -> CashSessionService:
     return CashSessionService(session=session)
 
 
-CashSessionDep = Annotated[CashSessionService,
-                           Depends(get_cash_session_service)]
+CashSessionServiceDep = Annotated[CashSessionService,
+                                  Depends(get_cash_session_service)]

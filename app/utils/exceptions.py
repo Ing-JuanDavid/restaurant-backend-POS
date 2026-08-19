@@ -41,3 +41,10 @@ def opened_cash(cash_id: int):
         status_code=status.HTTP_409_CONFLICT,
         detail=f"cash with id: {cash_id} already opened"
     )
+
+
+def no_cash_opened():
+    return HTTPException(
+        status_code=status.HTTP_409_CONFLICT,
+        detail="no cash opened yet"
+    )
