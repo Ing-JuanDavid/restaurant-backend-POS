@@ -34,3 +34,10 @@ def invalid_action(action: str):
         status_code=status.HTTP_409_CONFLICT,
         detail=f"{action}, invalid action"
     )
+
+
+def opened_cash(cash_id: int):
+    return HTTPException(
+        status_code=status.HTTP_409_CONFLICT,
+        detail=f"cash with id: {cash_id} already opened"
+    )
