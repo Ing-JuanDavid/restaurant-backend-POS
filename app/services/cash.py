@@ -4,7 +4,7 @@ from app.models.sales import Payment
 from typing import Annotated
 from fastapi import Depends
 from app.models.cash import MovementType
-from app.schemas.cash import CashDetailPublic
+from app.schemas.cash import CashDetailPublic, CashMovementPublic
 from datetime import datetime
 from sqlmodel import select
 
@@ -26,15 +26,20 @@ class CashSessionService:
 
     def get_cash_details(self, cash_id: int) -> CashDetailPublic:
         db_cash = self.get_cash(cash_id)
-        expected_balance = self._get_expected_closing_balcance(db_cash)
-        return self._to_cash_details(db_cash, expected_balance)
+        data = self._get_expected_closing_balcance(db_cash)
+        return self._to_cash_details(db_cash, data)
+
+    def get_movements(self, cash_id: int) -> list[CashMovementPublic]:
+        db_cash = self.get_cash(cash_id)
+
+        return db_cash.movements
 
     def get_opened_cash(self) -> CashSession | None:
         statement = select(CashSession).where(
             CashSession.status == CashStatus.ABIERTA)
         return self.session.exec(statement).first()
 
-    def open_cash(self, opening_balance: int | None) -> CashSession:
+    def open_cash(self, opening_balance: int) -> CashSession:
 
         is_opened_cash = self.get_opened_cash()
 
@@ -42,34 +47,35 @@ class CashSessionService:
             raise opened_cash(is_opened_cash.cash_session_id)
 
         db_cash = CashSession()
-        db_cash.opening_balance = opening_balance if opening_balance is not None else 0
+        db_cash.opening_balance = opening_balance
         db_cash.status = CashStatus.ABIERTA
         db_cash.opened_at = datetime.now()
         self.session.add(db_cash)
         self.save_cash(db_cash)
         return db_cash
 
-    def close_cash(self, cash_id: int, closing_balance: int) -> CashSession:
+    def close_cash(self, cash_id: int, closing_balance: int) -> CashDetailPublic:
         db_cash = self.get_cash(cash_id)
 
         if db_cash.status == CashStatus.CERRADA:
             raise invalid_action("close cash")
 
-        expect_balance = self._get_expected_closing_balcance(db_cash)
+        cash_data = self._get_expected_closing_balcance(db_cash)
 
         db_cash.closing_balance = closing_balance
-        db_cash.expec_closing_balance = expect_balance
-        db_cash.difference = closing_balance - expect_balance
+        db_cash.expec_closing_balance = cash_data[0]
+        db_cash.difference = closing_balance - cash_data[0]
         db_cash.status = CashStatus.CERRADA
         db_cash.closed_at = datetime.now()
-
         self.save_cash(db_cash)
-        return db_cash
+
+        return self._to_cash_details(db_cash, cash_data)
 
     def payment_to_cash_movement(self, payment: Payment) -> CashMovement:
         cash_movement = CashMovement(
             amount=payment.amount,
             payment_method=payment.method,
+            movement_type=MovementType.INGRESO,
             created_at=datetime.now(),
         )
 
@@ -79,21 +85,46 @@ class CashSessionService:
         self.session.commit()
         self.session.refresh(cash)
 
-    def _get_expected_closing_balcance(self, cash: CashSession) -> int:
+    def _get_expected_closing_balcance(self, cash: CashSession) -> tuple[int, int, int, int]:
         expect_balance = 0
-        for m in cash.movememts:
+        cash_total, transaction_total = 0, 0
+        net_total = 0
+        for m in cash.movements:
             if m.movement_type == MovementType.INGRESO:
-                expect_balance += m.amount
+                net_total += m.amount
+
+                if m.payment_method == "EFECTIVO":
+                    cash_total += m.amount
+                else:
+                    transaction_total += m.amount
+
             elif m.movement_type == MovementType.GASTO:
-                expect_balance -= m.amount
+                net_total -= m.amount
 
-        expect_balance += cash.opening_balance
-        return expect_balance
+                if m.payment_method == "EFECTIVO":
+                    cash_total -= m.amount
+                else:
+                    transaction_total -= m.amount
 
-    def _to_cash_details(self, cash: CashSession, expect_balance: int):
-        cash_detail = CashDetailPublic.model_validate(cash)
-        cash_detail.expected_balance = expect_balance
-        return cash_detail
+        expect_balance = net_total + cash.opening_balance
+        cash_total += cash.opening_balance
+
+        return expect_balance, cash_total, transaction_total, net_total
+
+    def _to_cash_details(self, cash: CashSession, data: tuple[int, int, int, int]) -> CashDetailPublic:
+        return CashDetailPublic(
+            cash_session_id=cash.cash_session_id,
+            opening_balane=cash.opening_balance,
+            expected_balance=data[0],
+            cash_total=data[1],
+            transaction_total=data[2],
+            status=cash.status,
+            difference=cash.difference,
+            closing_balance=cash.closing_balance,
+            net_total=data[3],
+            opened_at=cash.opened_at,
+            closed_at=cash.closed_at
+        )
 
 
 def get_cash_session_service(session: SessionDep) -> CashSessionService:

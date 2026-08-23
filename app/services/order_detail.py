@@ -32,7 +32,7 @@ class OrderDetailService:
 
         db_order_detail = OrderDetail.model_validate(order_detail)
 
-        if not db_order.status == OrderStatus.PENDING or not db_sale.status == SaleStatus.PENDIENTE:
+        if not db_order.status == OrderStatus.PENDING or db_sale.status == SaleStatus.PAGADA:
             raise invalid_action("add detail")
 
         # validation status

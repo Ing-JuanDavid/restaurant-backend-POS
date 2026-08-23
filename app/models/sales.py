@@ -30,6 +30,4 @@ class Payment(SQLModel, table=True):
     method: PaymentMethod = PaymentMethod.EFECTIVO
     created_at: datetime | None = None
     sale_id: int = Field(foreign_key="sale.sale_id")
-    movement_id: int | None = Field(
-        foreign_key="cashmovement.movement_id", unique=True)
     sale: Sale | None = Relationship(back_populates="payments")

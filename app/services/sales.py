@@ -68,10 +68,10 @@ class SalesService:
 
         if pending == 0:
             sale.status = SaleStatus.PAGADA
-        elif total_paid == 0:
-            SaleStatus.PARCIAL
+        elif total_paid > 0:
+            sale.status = SaleStatus.PARCIAL
         else:
-            SaleStatus.PENDIENTE
+            sale.status = SaleStatus.PENDIENTE
 
         return total_paid, pending
 

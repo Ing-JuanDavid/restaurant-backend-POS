@@ -8,6 +8,7 @@ from app.schemas.payment import PaymentPublic, PaymentCreate, PaymentUpdate
 from fastapi import Depends
 from typing import Annotated
 
+from app.models.cash import CashMovement, MovementType
 from app.utils.exceptions import sale_paid, invalid, not_found, invalid_action, no_cash_opened
 from datetime import datetime
 
@@ -48,14 +49,11 @@ class PaymentService:
         db_payment = Payment.model_validate(payment)
         db_payment.created_at = datetime.now()
         db_sale.payments.append(db_payment)
+        movement = self.cash_service.payment_to_cash_movement(db_payment)
+        opened_cash.movements.append(movement)
 
         paid, pending = self.sale_service._update_sale_status(db_sale)
-
-        opened_cash.movements.append(
-            self.cash_service.payment_to_cash_movement(db_payment))
-
         self.session.commit()
-        self.session.refresh(db_payment)
         return self.sale_service._to_sale_summary(db_sale, paid, pending)
 
     def update_payment(self, payment_id: int, payment_upd: PaymentUpdate) -> SaleSummary:
@@ -94,10 +92,25 @@ class PaymentService:
         # update sale
         db_sale.status = SaleStatus.PAGADA if total_pending == 0 else SaleStatus.PARCIAL
 
+        # update cash
+        current_cash = self.cash_service.get_opened_cash()
+        if current_cash:
+
+            difference = new_amount - old_amount
+            if difference != 0:
+                method = payment_data.get("method", db_payment.method)
+                cash_movement = CashMovement(
+                    amount=abs(difference),
+                    movement_type=MovementType.INGRESO if difference > 0 else MovementType.GASTO,
+                    created_at=datetime.now(),
+                    payment_method=method
+                )
+                current_cash.movements.append(cash_movement)
+
         self.session.commit()
         self.session.refresh(db_payment)
         self.session.refresh(db_sale)
-        return self.sale_service._to_sale_summary(db_sale)
+        return self.sale_service._to_sale_summary(db_sale, total_paid, total_pending)
 
     def get_payments_by_sale(self, sale_id: int) -> list[PaymentPublic]:
         db_sale = self.sale_service.get_sale(sale_id)
