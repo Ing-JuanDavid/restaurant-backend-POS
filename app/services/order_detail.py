@@ -70,6 +70,9 @@ class OrderDetailService:
 
         # Validar aumento
         if difference > 0:
+            if not db_menu_item.status:
+                raise not_available(f"item {db_menu_item.item_id}")
+
             if db_menu_item.quant is not None and difference > db_menu_item.quant:
                 raise invalid("quantity")
 
