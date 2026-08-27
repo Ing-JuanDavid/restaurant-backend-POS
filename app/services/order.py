@@ -121,7 +121,7 @@ class OrderService:
             document=o.customer.document if o.customer else None,
             customer_name=o.customer_name,
             phone=o.phone,
-            delivery_address=o.delivery_address
+            delivery_address=o.delivery_address if o.order_type == "DOMICILIO" else None
         )
 
     def to_public_order_details(self, o: Order) -> OrderDetailsPublic:
