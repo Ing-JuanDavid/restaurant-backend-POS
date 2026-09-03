@@ -6,3 +6,4 @@ from .order_detail import OrderDetail
 from .sales import Sale, Payment
 from .cash import CashSession, CashMovement, CashStatus
 from .expense import Expense, ExpenseType
+from .user import UserRole, User
