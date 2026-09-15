@@ -15,4 +15,4 @@ class User(SQLModel, table=True):
     password_hash: str | None = None
     role: UserRole = UserRole.CLIENTE
     is_active: bool = True
-    created_at: datetime = Field(default_factory=datetime.now())
+    created_at: datetime = Field(default_factory=datetime.now)

@@ -8,6 +8,13 @@ def not_found(entity: str):
     )
 
 
+def unauthorized(entity: str):
+    return HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail=f"invalid {entity}"
+    )
+
+
 def invalid(entity: str):
     return HTTPException(
         status_code=status.HTTP_409_CONFLICT,
