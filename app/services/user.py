@@ -3,8 +3,6 @@ from fastapi import Depends
 from typing import Annotated
 from app.models.user import User, UserRole
 from app.schemas.user import UserCreate, UserPublic
-from app.utils.exceptions import invalid
-from app.security import password_encoder
 from sqlmodel import select
 
 

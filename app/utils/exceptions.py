@@ -55,3 +55,10 @@ def no_cash_opened():
         status_code=status.HTTP_409_CONFLICT,
         detail="no cash opened yet"
     )
+
+
+def invalid_token():
+    return HTTPException(
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        detail="Invalid token error"
+    )

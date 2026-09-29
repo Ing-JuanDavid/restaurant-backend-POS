@@ -2,6 +2,9 @@ from fastapi import APIRouter, Query, status
 from app.schemas.menu import MenuBase, MenuUpdate, MenuPublic
 from typing import Annotated
 from app.services.menu import MenuServiceDep
+from app.dependencies import auth
+from fastapi import Depends
+from app.models.user import User, UserRole
 
 router = APIRouter(prefix="/menu", tags=["menu"])
 
@@ -11,6 +14,7 @@ async def read_menues(
     service: MenuServiceDep,
     offset: int = 0,
     limit: Annotated[int, Query(le=100)] = 100,
+    user: User = Depends(auth.authorize(UserRole.ADMIN, UserRole.MESERO))
 ):
     return service.get_menues(offset, limit)
 

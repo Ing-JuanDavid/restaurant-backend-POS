@@ -12,6 +12,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 
+
 app.include_router(menu.router)
 # app.include_router(category.router)
 app.include_router(menu_item.router)

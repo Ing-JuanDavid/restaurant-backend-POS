@@ -1,13 +1,17 @@
 
+from app.dependencies import jwt
 from app.models.user import User
-from app.schemas.user import UserRegister, UserCreate, UserLoggin, LogginResponse
+from app.schemas.user import UserRegister, UserCreate, AuthResponse
 from app.services.user import UserService, UserServiceDep, UserPublic
 from sqlmodel import select
 from app.utils.exceptions import invalid, unauthorized
-from app.security import password_encoder
+from app.dependencies import password_encoder
 from fastapi import Depends
 from typing import Annotated
 from app.utils.exceptions import invalid
+from fastapi.security import OAuth2PasswordRequestForm
+
+from datetime import datetime, timedelta
 
 
 class AuthService:
@@ -30,7 +34,9 @@ class AuthService:
 
         return user
 
-    def register(self, user_data: UserRegister) -> UserPublic:
+    # return a user
+
+    def register(self, user_data: UserRegister) -> AuthResponse:
         user_exist = self.user_service.get_user_by_username(user_data.username)
 
         if user_exist:
@@ -43,22 +49,32 @@ class AuthService:
             is_active=True
         )
 
-        return self.user_service.create_user(user_create)
+        db_user = self.user_service.create_user(user_create)
 
-    # loggin function
+        access_token = jwt.create_access_token(data={"sub": db_user.username})
 
-    def loggin(self, login_data: UserLoggin) -> LogginResponse:
+        return self.to_auth_reponse(db_user, access_token)
 
-        user = UserPublic.model_validate(
-            self.authenticate(login_data.username, login_data.password)
+    # return token data + user
+
+    def login(self, form_data: OAuth2PasswordRequestForm) -> AuthResponse:
+
+        db_user = self.authenticate(form_data.username, form_data.password)
+
+        access_token = jwt.create_access_token(
+            data={"sub": db_user.username}
         )
 
-        response = LogginResponse(
-            token="",
-            user=user
-        )
+        return self.to_auth_reponse(db_user, access_token)
 
-        return response
+    def to_auth_reponse(self, db_user: User, access_token: str) -> AuthResponse:
+        pub_user = UserPublic.model_validate(db_user)
+
+        return AuthResponse(
+            access_token=access_token,
+            token_type="bearer",
+            user=pub_user
+        )
 
 
 def get_auth_service_dep(user_service: UserServiceDep) -> AuthService:

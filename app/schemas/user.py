@@ -1,25 +1,27 @@
 from pydantic import BaseModel, Field, ConfigDict
 from app.models.user import UserRole
+from app.dependencies.jwt import Token
 
 
-class UserLoggin(BaseModel):
+class UserLogin(BaseModel):
     username: str
     password: str
 
 
-class LogginResponse(BaseModel):
-    token: str
+class AuthResponse(BaseModel):
+    access_token: str
+    token_type: str
     user: UserPublic
 
 
 class UserRegister(BaseModel):
-    username: str = Field(min_length=10, max_length=50)
+    username: str = Field(min_length=7, max_length=50)
     password: str
     role: UserRole = UserRole.CLIENTE
 
 
 class UserCreate(BaseModel):
-    username: str = Field(min_length=10, max_length=50)
+    username: str = Field(min_length=7, max_length=50)
     password_hash: str
     role: UserRole = UserRole.CLIENTE
     is_active: bool = True
