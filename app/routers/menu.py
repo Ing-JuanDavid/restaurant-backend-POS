@@ -2,7 +2,7 @@ from fastapi import APIRouter, Query, status
 from app.schemas.menu import MenuBase, MenuUpdate, MenuPublic
 from typing import Annotated
 from app.services.menu import MenuServiceDep
-from app.dependencies import auth
+from app.dependencies.auth import authorize
 from fastapi import Depends
 from app.models.user import User, UserRole
 
@@ -14,33 +14,47 @@ async def read_menues(
     service: MenuServiceDep,
     offset: int = 0,
     limit: Annotated[int, Query(le=100)] = 100,
-    user: User = Depends(auth.authorize(UserRole.ADMIN, UserRole.MESERO))
+    user: User = Depends(authorize(UserRole.ADMIN, UserRole.MESERO))
 ):
     return service.get_menues(offset, limit)
 
 
 @router.post("", response_model=MenuPublic, status_code=status.HTTP_201_CREATED)
-async def create_menu(menu: MenuBase, service: MenuServiceDep):
+async def create_menu(
+    menu: MenuBase,
+    service: MenuServiceDep,
+    user: User = Depends(authorize(UserRole.ADMIN))
+):
     db_menu = service.create_menu(menu)
     return db_menu
 
 
 @router.get("/{menu_id}", response_model=MenuPublic)
-async def find_menu(menu_id: int, service: MenuServiceDep):
+async def find_menu(
+    menu_id: int,
+    service: MenuServiceDep,
+    user: User = Depends(authorize(UserRole.ADMIN, UserRole.MESERO))
+):
     return service.get_menu(menu_id)
 
 
 @router.patch("/{menu_id}", response_model=MenuPublic)
 async def update_menu(
-        menu_id: int,
-        upd_menu: MenuUpdate,
-        service: MenuServiceDep):
+    menu_id: int,
+    upd_menu: MenuUpdate,
+    service: MenuServiceDep,
+    user: User = Depends(authorize(UserRole.ADMIN))
+):
 
     return service.update_menu(menu_id, upd_menu)
 
 
 @router.delete("/{menu_id}")
-async def delete_menu(menu_id: int, service: MenuServiceDep):
+async def delete_menu(
+    menu_id: int,
+    service: MenuServiceDep,
+    user: User = Depends(authorize(UserRole.ADMIN))
+):
     service.delete_menu(menu_id)
     return {"message": "ok"}
 
