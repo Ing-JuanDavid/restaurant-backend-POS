@@ -13,8 +13,7 @@ router = APIRouter(prefix="/menu", tags=["menu"])
 async def read_menues(
     service: MenuServiceDep,
     offset: int = 0,
-    limit: Annotated[int, Query(le=100)] = 100,
-    user: User = Depends(authorize(UserRole.ADMIN, UserRole.MESERO))
+    limit: Annotated[int, Query(le=100)] = 100
 ):
     return service.get_menues(offset, limit)
 
@@ -32,8 +31,7 @@ async def create_menu(
 @router.get("/{menu_id}", response_model=MenuPublic)
 async def find_menu(
     menu_id: int,
-    service: MenuServiceDep,
-    user: User = Depends(authorize(UserRole.ADMIN, UserRole.MESERO))
+    service: MenuServiceDep
 ):
     return service.get_menu(menu_id)
 
