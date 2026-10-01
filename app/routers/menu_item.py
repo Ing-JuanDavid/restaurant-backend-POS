@@ -1,4 +1,6 @@
-from fastapi import APIRouter, status
+from fastapi import APIRouter, status, Depends
+from app.models.user import User, UserRole
+from app.dependencies.auth import authorize
 from app.schemas.menu_item import MenuItemCreate, MenuItemUpdate, MenuItemPublic
 from app.services.menu_item import MenuItemServiceDep
 
@@ -16,7 +18,11 @@ async def read_menu_items(menu_id: int, service: MenuItemServiceDep):
 
 
 @router.post("/items", response_model=MenuItemPublic, status_code=status.HTTP_201_CREATED)
-async def create_menu_item(item: MenuItemCreate, service: MenuItemServiceDep):
+async def create_menu_item(
+    item: MenuItemCreate,
+    service: MenuItemServiceDep,
+    user: User = Depends(authorize(UserRole.ADMIN))
+):
     return service.add_item(item)
 
 
@@ -24,7 +30,8 @@ async def create_menu_item(item: MenuItemCreate, service: MenuItemServiceDep):
 async def update_menu_item(
     item_id: int,
     upd_item: MenuItemUpdate,
-    service: MenuItemServiceDep
+    service: MenuItemServiceDep,
+    user: User = Depends(authorize(UserRole.ADMIN))
 ):
     return service.update_item(item_id, upd_item)
 
@@ -32,7 +39,8 @@ async def update_menu_item(
 @router.delete("/items/{item_id}")
 async def create_menu_item(
     item_id: int,
-    service: MenuItemServiceDep
+    service: MenuItemServiceDep,
+    user: User = Depends(authorize(UserRole.ADMIN))
 ):
 
     service.delete_item(item_id)
