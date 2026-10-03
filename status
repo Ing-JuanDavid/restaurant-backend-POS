@@ -1,0 +1,32 @@
+[33mdafc65b[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mfeat/router-auth[m[33m)[m orders done
+[33mb6a3945[m customers done
+[33m9cea321[m menu-item done
+[33mcf29cea[m menu-auth done
+[33md740dd1[m menu-auth
+[33m43caaf8[m[33m ([m[1;31morigin/main[m[33m, [m[1;32mmain[m[33m)[m auth scheme done
+[33m7f42df3[m password encoder added
+[33m24c8cd2[m feat: user data model added
+[33mef112fb[m refacor: delivery address visibility
+[33m78266f5[m fix: order-detail
+[33m7343e94[m feat: cash-controllers finished
+[33m7c57499[m a few changes on cash and payment services
+[33m4ad887f[m feat: add cash service
+[33m706ea01[m feat: payment crud
+[33m92edee7[m cache
+[33m34ac22c[m feat: sale and payment table added
+[33m913785a[m feat: adding sale and payment tables to the model
+[33m0264986[m refactor: show product name on odetails schema
+[33m03f0e40[m refactor: update and remove function on order detail service
+[33mdf316da[m refactor: add item on order details service
+[33m5249e54[m refactor: datamodels
+[33m4085106[m refator: datamodels: order, order_detail, customer, menu item
+[33me969f37[m first migration ready (on postgres)
+[33m1681dc4[m adding migrations
+[33mcbc92ad[m refactor complete
+[33m1fb3687[m f/order complete
+[33m6e98ebd[m refactor complete
+[33me39f24c[m f/order complete
+[33m210f7c0[m excluding database file from gitignore
+[33m72dc338[m f/order done
+[33ma8517bb[m second commit
+[33m8bc9b1f[m first commit
