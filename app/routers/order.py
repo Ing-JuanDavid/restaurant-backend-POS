@@ -1,17 +1,22 @@
-from fastapi import APIRouter, Path, Query, status
+from fastapi import APIRouter, Path, Query, status, Depends
 from typing import Annotated
 from app.models.order import OrderStatus, CustomerType
+from app.models.user import User, UserRole
 from app.schemas.order import OrderCreate, OrderUpdate, OrderPublic, OrderDetailsPublic
 from app.schemas.order_detail import OrderDetailCreate
 from app.services.order import OrderServiceDep
 from app.services.order_detail import OrderItemServiceDep
-
+from app.dependencies.auth import authorize
 
 router = APIRouter(prefix="/orders", tags=["order"])
 
 
 @router.post("", response_model=OrderPublic, status_code=status.HTTP_201_CREATED)
-async def create_order(order: OrderCreate, service: OrderServiceDep):
+async def create_order(
+    order: OrderCreate,
+    service: OrderServiceDep,
+    user: User = Depends(authorize(UserRole.ADMIN, UserRole.MESERO))
+):
     return service.create_order(order=order)
 
 
@@ -20,19 +25,28 @@ async def read_orders(
     service: OrderServiceDep,
     status: Annotated[OrderStatus | None, Query(
         description="Filter by order status")] = None,
-    customer_type: Annotated[CustomerType | None, Query()] = None
+    customer_type: Annotated[CustomerType | None, Query()] = None,
+    user: User = Depends(authorize(UserRole.ADMIN, UserRole.MESERO))
 ):
     return service.get_orders(status, customer_type)
 
 
 @router.get("/{document}", response_model=list[OrderPublic], status_code=200)
-async def read_user_orders(document: int, service: OrderServiceDep):
+async def read_user_orders(
+    document: int,
+    service: OrderServiceDep,
+    user: User = Depends(authorize(UserRole.ADMIN, UserRole.MESERO))
+):
     orders = service.get_orders_document(document=document)
     return orders
 
 
 @router.get("/{order_id}/details")
-async def read_order_items(order_id: int, service: OrderServiceDep):
+async def read_order_items(
+    order_id: int,
+    service: OrderServiceDep,
+    user: User = Depends(authorize(UserRole.ADMIN, UserRole.MESERO))
+):
     return service.get_order_details(order_id)
 
 
@@ -40,13 +54,18 @@ async def read_order_items(order_id: int, service: OrderServiceDep):
 async def update_order(
     order: OrderUpdate,
     service: OrderServiceDep,
-    order_id: int = Path(gt=0)
+    order_id: int = Path(gt=0),
+    user: User = Depends(authorize(UserRole.ADMIN, UserRole.MESERO))
 ):
     return service.update_order(order_id, order)
 
 
 @router.post("/details", response_model=OrderDetailsPublic)
-async def add_detail(order_detail: OrderDetailCreate, service: OrderItemServiceDep):
+async def add_detail(
+    order_detail: OrderDetailCreate,
+    service: OrderItemServiceDep,
+    user: User = Depends(authorize(UserRole.ADMIN, UserRole.MESERO))
+):
     db_order = service.add_order_detail(order_detail=order_detail)
     return db_order
 
@@ -55,7 +74,8 @@ async def add_detail(order_detail: OrderDetailCreate, service: OrderItemServiceD
 async def update_detail(
     service: OrderItemServiceDep,
     detail_id: int,
-    new_quant: int = Query(gt=0)
+    new_quant: int = Query(gt=0),
+    user: User = Depends(authorize(UserRole.ADMIN, UserRole.MESERO))
 ):
     return service.update_order_detail(order_detail_id=detail_id, new_quant=new_quant)
 
@@ -63,7 +83,8 @@ async def update_detail(
 @router.delete("/details/{detail_id}")
 async def remove_detail(
     service: OrderItemServiceDep,
-    detail_id: int = Path(gt=0)
+    detail_id: int = Path(gt=0),
+    user: User = Depends(authorize(UserRole.ADMIN, UserRole.MESERO))
 ):
     service.remove_order_detail(detail_id)
 
